@@ -1,40 +1,18 @@
 public class StorageDevice {
     private FATFileSystem fileSystem;
-    private int memoryMB;
 
-    public StorageDevice() {
-
-    }
-
-    public void initialize(String fatType, int memoryMB) {
-        this.memoryMB = memoryMB;
+    public void initialize(String fatType, int capacity) {
         switch (fatType) {
             case "FAT12":
-                fileSystem = new FAT12();
+                fileSystem = new FAT12(capacity);
                 break;
             case "FAT16":
-                fileSystem = new FAT16();
+                fileSystem = new FAT16(capacity);
                 break;
             case "FAT32":
-                fileSystem = new FAT32();
+                fileSystem = new FAT32(capacity);
                 break;
         }
-        fileSystem.initialize(memoryMB);
-        System.out.println("Dispositivo inicializado con " + fatType + " y " + memoryMB + " MB de memoria");
-    }
-
-    public int getTotalClusters() {
-        if (fileSystem != null) {
-            return fileSystem.getTotalClusters();
-        }
-        return 0;
-    }
-
-    public int getFreeClusters() {
-        if (fileSystem != null) {
-            return fileSystem.getFreeClusters();
-        }
-        return 0;
     }
 
     public FATFileSystem getFileSystem() {

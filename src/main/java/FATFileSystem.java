@@ -1,42 +1,33 @@
-public abstract class FATFileSystem {
-    protected int capacity;
-    protected DirectoryEntry rootDirectory;
+import java.util.HashMap;
+import java.util.Map;
 
-    public FATFileSystem() {
-        this.rootDirectory = new DirectoryEntry("root");
+public abstract class FATFileSystem {
+    protected int[] fatTable;
+    protected DirectoryEntry rootDirectory;
+    protected Map<Integer, String> clusterMapping;
+
+    public FATFileSystem(int numClusters) {
+        fatTable = new int[numClusters];
+        rootDirectory = new DirectoryEntry("root");
+        clusterMapping = new HashMap<>();
     }
 
-    public abstract void initialize(int capacity);
-
-    public abstract void showFATTable();
+    public int[] getFATTable() {
+        return fatTable;
+    }
 
     public DirectoryEntry getRootDirectory() {
         return rootDirectory;
     }
 
-    public void addFile(String fileName) {
-        rootDirectory.addFile(new FileEntry(fileName));
+    public Map<Integer, String> getClusterMapping() {
+        return clusterMapping;
     }
 
-    public void deleteFile(String fileName) {
-        rootDirectory.removeFile(fileName);
-    }
-
-    public void addDirectory(String dirName) {
-        rootDirectory.addSubdirectory(new DirectoryEntry(dirName));
-    }
-
-    public void deleteDirectory(String dirName) {
-        rootDirectory.removeSubdirectory(dirName);
-    }
-
-    public int getTotalClusters() {
-        // Implementación básica, debe ser sobrescrita por las clases derivadas
-        return 0;
-    }
-
-    public int getFreeClusters() {
-        // Implementación básica, debe ser sobrescrita por las clases derivadas
-        return 0;
-    }
+    public abstract void initialize(int capacity);
+    public abstract void addFile(String fileName);
+    public abstract void deleteFile(String fileName);
+    public abstract void addDirectory(String dirName);
+    public abstract void deleteDirectory(String dirName);
+    public abstract void renameEntry(String oldName, String newName);
 }

@@ -1,62 +1,60 @@
 import java.util.ArrayList;
 import java.util.List;
 
-public class DirectoryEntry {
-    private String name;
-    private List<FileEntry> files;
-    private List<DirectoryEntry> subdirectories;
+public class DirectoryEntry extends FileEntry {
+    private List<FileEntry> entries;
 
     public DirectoryEntry(String name) {
-        this.name = name;
-        this.files = new ArrayList<>();
-        this.subdirectories = new ArrayList<>();
+        super(name);
+        this.entries = new ArrayList<>();
     }
 
-    public String getName() {
-        return name;
+    public void addEntry(FileEntry entry) {
+        entries.add(entry);
     }
 
-    public List<FileEntry> getFiles() {
-        return files;
+    public void removeEntry(FileEntry entry) {
+        entries.remove(entry);
     }
 
-    public List<DirectoryEntry> getSubdirectories() {
-        return subdirectories;
-    }
-
-    public void addFile(FileEntry file) {
-        files.add(file);
-    }
-
-    public void addSubdirectory(DirectoryEntry directory) {
-        subdirectories.add(directory);
+    public List<FileEntry> getEntries() {
+        return entries;
     }
 
     public boolean isEmpty() {
-        return files.isEmpty() && subdirectories.isEmpty();
+        return entries.isEmpty();
+    }
+
+    public FileEntry findEntry(String name) {
+        for (FileEntry entry : entries) {
+            if (entry.getName().equals(name)) {
+                return entry;
+            }
+        }
+        return null;
+    }
+
+    public FileEntry findFile(String name) {
+        for (FileEntry entry : entries) {
+            if (entry instanceof FileEntry && entry.getName().equals(name)) {
+                return entry;
+            }
+        }
+        return null;
+    }
+
+    public DirectoryEntry findDirectory(String name) {
+        for (FileEntry entry : entries) {
+            if (entry instanceof DirectoryEntry && entry.getName().equals(name)) {
+                return (DirectoryEntry) entry;
+            }
+        }
+        return null;
     }
 
     @Override
     public String toString() {
-        return "Directory: " + name;
-    }
-
-    public List<Object> getEntries() {
-        List<Object> entries = new ArrayList<>();
-        entries.addAll(subdirectories);
-        entries.addAll(files);
-        return entries;
-    }
-
-    public boolean isDirectory() {
-        return true;
-    }
-
-    public void removeFile(String name) {
-        files.removeIf(file -> file.getName().equals(name));
-    }
-
-    public void removeSubdirectory(String name) {
-        subdirectories.removeIf(directory -> directory.getName().equals(name));
+        return getName();
     }
 }
+
