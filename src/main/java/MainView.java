@@ -1,153 +1,112 @@
-import javafx.collections.FXCollections;
-import javafx.collections.ObservableList;
-import javafx.geometry.Insets;
+import javafx.application.Application;
+import javafx.scene.Scene;
 import javafx.scene.control.*;
-import javafx.scene.layout.BorderPane;
-import javafx.scene.layout.GridPane;
 import javafx.scene.layout.VBox;
+import javafx.stage.Stage;
+import javafx.scene.control.TreeItem;
+import javafx.scene.control.TreeView;
+import javafx.geometry.Insets;
 
-public class MainView {
+public class MainView extends Application {
     private StorageDevice storageDevice;
-    private FATFileSystem fileSystem;
-    private BorderPane mainLayout;
-    private ListView<FileEntry> listView;
-    private TableView<FATEntry> fatTable;
-    private Label memoryLabel;
 
-    public MainView(StorageDevice storageDevice) {
-        this.storageDevice = storageDevice;
-        this.fileSystem = storageDevice.getFileSystem();
-        mainLayout = new BorderPane();
+    @Override
+    public void start(Stage primaryStage) {
+        storageDevice = new StorageDevice();
 
-        listView = new ListView<>();
-        updateListView();
+        VBox root = new VBox(10);
+        root.setPadding(new Insets(10));
 
-        VBox leftPanel = new VBox(10);
-        leftPanel.setPadding(new Insets(10));
-        leftPanel.getChildren().addAll(new Label("Archivos y Directorios"), listView, createControlPanel());
+        Label capacityLabel = new Label("Capacidad del dispositivo (MB):");
+        TextField capacityField = new TextField();
 
-        fatTable = new TableView<>();
-        initializeFATTable();
+        Label fatTypeLabel = new Label("Seleccione el tipo de sistema de archivos FAT:");
+        ComboBox<String> fatTypeComboBox = new ComboBox<>();
+        fatTypeComboBox.getItems().addAll("FAT12", "FAT16", "FAT32");
 
-        memoryLabel = new Label();
-        updateMemoryLabel();
+        Button initializeButton = new Button("Inicializar");
+        Button showTableButton = new Button("Mostrar Tabla FAT");
 
-        mainLayout.setLeft(leftPanel);
-        mainLayout.setCenter(fatTable);
-        mainLayout.setBottom(memoryLabel);
-    }
+        TreeView<Object> fileTreeView = new TreeView<>();
+        TreeItem<Object> rootItem = new TreeItem<>("root");
+        fileTreeView.setRoot(rootItem);
 
-    public BorderPane getView() {
-        return mainLayout;
-    }
+        Label fileNameLabel = new Label("Nombre del Archivo/Directorio:");
+        TextField fileNameField = new TextField();
 
-    private void updateListView() {
-        ObservableList<FileEntry> items = FXCollections.observableArrayList(fileSystem.listDirectory(0));
-        listView.setItems(items);
-        listView.setCellFactory(param -> new ListCell<>() {
-            @Override
-            protected void updateItem(FileEntry item, boolean empty) {
-                super.updateItem(item, empty);
-                if (empty || item == null) {
-                    setText(null);
-                } else {
-                    setText((item.isDirectory() ? "DIR " : "FILE ") + item.getName());
-                }
-            }
-        });
-    }
+        Button addFileButton = new Button("Agregar Archivo");
+        Button deleteFileButton = new Button("Eliminar Archivo");
+        Button addDirectoryButton = new Button("Agregar Directorio");
+        Button deleteDirectoryButton = new Button("Eliminar Directorio");
 
-    private GridPane createControlPanel() {
-        GridPane controlPanel = new GridPane();
-        controlPanel.setHgap(10);
-        controlPanel.setVgap(10);
-        controlPanel.setPadding(new Insets(10));
+        initializeButton.setOnAction(e -> {
+            int capacity = Integer.parseInt(capacityField.getText());
+            String selectedFATType = fatTypeComboBox.getValue();
 
-        TextField nameField = new TextField();
-        Button createFileButton = new Button("Crear Archivo");
-        Button createDirButton = new Button("Crear Directorio");
-        Button deleteButton = new Button("Eliminar");
-        Button modifyButton = new Button("Modificar");
-        TextField memoryField = new TextField();
-        Button setMemoryButton = new Button("Establecer Memoria");
-
-        createFileButton.setOnAction(e -> {
-            fileSystem.createFile(nameField.getText(), 0);
-            updateListView();
-            updateFATTable();
-            updateMemoryLabel();
+            storageDevice.initialize(selectedFATType, capacity);
+            updateFileTreeView(rootItem, storageDevice.getFileSystem().getRootDirectory());
         });
 
-        createDirButton.setOnAction(e -> {
-            fileSystem.createDirectory(nameField.getText(), 0);
-            updateListView();
-            updateFATTable();
-            updateMemoryLabel();
-        });
-
-        deleteButton.setOnAction(e -> {
-            FileEntry selected = listView.getSelectionModel().getSelectedItem();
-            if (selected != null) {
-                fileSystem.deleteEntry(selected.getName(), 0);
-                updateListView();
-                updateFATTable();
-                updateMemoryLabel();
+        showTableButton.setOnAction(e -> {
+            if (storageDevice.getFileSystem() != null) {
+                storageDevice.getFileSystem().showFATTable();
+            } else {
+                System.out.println("Primero inicialice el sistema de archivos FAT.");
             }
         });
 
-        modifyButton.setOnAction(e -> {
-            FileEntry selected = listView.getSelectionModel().getSelectedItem();
-            if (selected != null) {
-                fileSystem.modifyEntry(selected.getName(), nameField.getText(), 0);
-                updateListView();
-                updateFATTable();
-                updateMemoryLabel();
+        addFileButton.setOnAction(e -> {
+            String fileName = fileNameField.getText();
+            if (storageDevice.getFileSystem() != null && !fileName.isEmpty()) {
+                storageDevice.getFileSystem().addFile(fileName);
+                updateFileTreeView(rootItem, storageDevice.getFileSystem().getRootDirectory());
             }
         });
 
-        setMemoryButton.setOnAction(e -> {
-            int memoryMB = Integer.parseInt(memoryField.getText());
-            storageDevice.setMemory(memoryMB);
-            updateMemoryLabel();
+        deleteFileButton.setOnAction(e -> {
+            String fileName = fileNameField.getText();
+            if (storageDevice.getFileSystem() != null && !fileName.isEmpty()) {
+                storageDevice.getFileSystem().deleteFile(fileName);
+                updateFileTreeView(rootItem, storageDevice.getFileSystem().getRootDirectory());
+            }
         });
 
-        controlPanel.add(new Label("Nombre:"), 0, 0);
-        controlPanel.add(nameField, 1, 0);
-        controlPanel.add(createFileButton, 0, 1);
-        controlPanel.add(createDirButton, 1, 1);
-        controlPanel.add(deleteButton, 2, 1);
-        controlPanel.add(modifyButton, 3, 1);
-        controlPanel.add(new Label("Memoria (MB):"), 0, 2);
-        controlPanel.add(memoryField, 1, 2);
-        controlPanel.add(setMemoryButton, 2, 2);
+        addDirectoryButton.setOnAction(e -> {
+            String dirName = fileNameField.getText();
+            if (storageDevice.getFileSystem() != null && !dirName.isEmpty()) {
+                storageDevice.getFileSystem().addDirectory(dirName);
+                updateFileTreeView(rootItem, storageDevice.getFileSystem().getRootDirectory());
+            }
+        });
 
-        return controlPanel;
+        deleteDirectoryButton.setOnAction(e -> {
+            String dirName = fileNameField.getText();
+            if (storageDevice.getFileSystem() != null && !dirName.isEmpty()) {
+                storageDevice.getFileSystem().deleteDirectory(dirName);
+                updateFileTreeView(rootItem, storageDevice.getFileSystem().getRootDirectory());
+            }
+        });
+
+        root.getChildren().addAll(capacityLabel, capacityField, fatTypeLabel, fatTypeComboBox, initializeButton, showTableButton, fileNameLabel, fileNameField, addFileButton, deleteFileButton, addDirectoryButton, deleteDirectoryButton, fileTreeView);
+
+        Scene scene = new Scene(root, 600, 400);
+        primaryStage.setTitle("Simulador FAT");
+        primaryStage.setScene(scene);
+        primaryStage.show();
     }
 
-    private void initializeFATTable() {
-        TableColumn<FATEntry, Integer> clusterColumn = new TableColumn<>("Cluster");
-        clusterColumn.setCellValueFactory(cellData -> cellData.getValue().clusterProperty().asObject());
-
-        TableColumn<FATEntry, String> statusColumn = new TableColumn<>("Estado");
-        statusColumn.setCellValueFactory(cellData -> cellData.getValue().statusProperty());
-
-        fatTable.getColumns().addAll(clusterColumn, statusColumn);
-        updateFATTable();
-    }
-
-    private void updateFATTable() {
-        ObservableList<FATEntry> fatEntries = FXCollections.observableArrayList();
-        for (int i = 0; i < 4086; i++) {
-            int value = fileSystem.getFatEntry(i);
-            String status = (value == 0) ? "Libre" : (value == 0xFFF) ? "Fin de Archivo" : "Usado";
-            fatEntries.add(new FATEntry(i, status));
+    private void updateFileTreeView(TreeItem<Object> rootItem, DirectoryEntry rootDirectory) {
+        rootItem.getChildren().clear();
+        for (Object entry : rootDirectory.getEntries()) {
+            TreeItem<Object> item = new TreeItem<>(entry);
+            rootItem.getChildren().add(item);
+            if (entry instanceof DirectoryEntry) {
+                updateFileTreeView(item, (DirectoryEntry) entry);
+            }
         }
-        fatTable.setItems(fatEntries);
     }
 
-    private void updateMemoryLabel() {
-        int totalClusters = storageDevice.getTotalClusters();
-        int freeClusters = storageDevice.getFreeClusters();
-        memoryLabel.setText("Memoria Total: " + totalClusters + " clusters, Memoria Libre: " + freeClusters + " clusters");
+    public static void main(String[] args) {
+        launch(args);
     }
 }

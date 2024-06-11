@@ -3,27 +3,38 @@ public class StorageDevice {
     private int memoryMB;
 
     public StorageDevice() {
-        fileSystem = new FATFileSystem();
-        formatFAT12();
+
     }
 
-    public void formatFAT12() {
-        fileSystem.mount();
-        System.out.println("Dispositivo formateado a FAT12");
-    }
-
-    public void setMemory(int memoryMB) {
+    public void initialize(String fatType, int memoryMB) {
         this.memoryMB = memoryMB;
-        fileSystem.initialize(memoryMB * 1024 * 1024 / 512);
-        System.out.println("Memoria del dispositivo establecida en " + memoryMB + " MB");
+        switch (fatType) {
+            case "FAT12":
+                fileSystem = new FAT12();
+                break;
+            case "FAT16":
+                fileSystem = new FAT16();
+                break;
+            case "FAT32":
+                fileSystem = new FAT32();
+                break;
+        }
+        fileSystem.initialize(memoryMB);
+        System.out.println("Dispositivo inicializado con " + fatType + " y " + memoryMB + " MB de memoria");
     }
 
     public int getTotalClusters() {
-        return fileSystem.getTotalClusters();
+        if (fileSystem != null) {
+            return fileSystem.getTotalClusters();
+        }
+        return 0;
     }
 
     public int getFreeClusters() {
-        return fileSystem.getFreeClusters();
+        if (fileSystem != null) {
+            return fileSystem.getFreeClusters();
+        }
+        return 0;
     }
 
     public FATFileSystem getFileSystem() {
